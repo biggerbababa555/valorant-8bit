@@ -28,6 +28,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [selectedRank, setSelectedRank] = useState("Radiant");
+  const [selectedAgent, setSelectedAgent] = useState<"jett" | "phoenix">("jett");
   const [socket, setSocket] = useState<Socket | null>(null);
   const [playersList, setPlayersList] = useState<Player[]>([]);
   const [localPlayer, setLocalPlayer] = useState<Player | null>(null);
@@ -56,7 +57,7 @@ function App() {
       newSocket.emit("join_lobby", {
         username: username,
         rank: selectedRank,
-        agent: "jett",
+        agent: selectedAgent,
       });
     });
 
@@ -107,14 +108,20 @@ function App() {
     const bgImage = new Image();
     bgImage.src = "/map/ascent.jpg";
 
-    // Loading Jett sprites
-    const sprites: Record<string, HTMLImageElement> = {};
+    // Loading Jett & Phoenix sprites
+    const sprites: Record<string, Record<string, HTMLImageElement>> = {
+      jett: {},
+      phoenix: {}
+    };
+    const agents = ["jett", "phoenix"];
     const states = ["stand", "walk", "run", "sit"];
 
-    states.forEach((state) => {
-      const img = new Image();
-      img.src = `/assets/jett/jett-${state}.png`;
-      sprites[state] = img;
+    agents.forEach((agent) => {
+      states.forEach((state) => {
+        const img = new Image();
+        img.src = `/assets/${agent}/${agent}-${state}.png`;
+        sprites[agent][state] = img;
+      });
     });
 
 
@@ -261,7 +268,7 @@ function App() {
         id: socket.id || "me",
         username: username,
         rank: selectedRank,
-        agent: "jett",
+        agent: selectedAgent,
         x: px,
         y: py,
         direction: pdir,
@@ -285,11 +292,11 @@ function App() {
   const drawPlayerSprite = (
     ctx: CanvasRenderingContext2D,
     player: Player,
-    sprites: Record<string, HTMLImageElement>,
+    sprites: Record<string, Record<string, HTMLImageElement>>,
     size: number,
     isLocal: boolean = false,
   ) => {
-    const sprite = sprites[player.state];
+    const sprite = sprites[player.agent]?.[player.state];
     if (!sprite || !sprite.complete) return;
 
     ctx.save();
@@ -372,16 +379,38 @@ function App() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">SELECTED AGENT</label>
-              <div className="agent-preview-box">
-                <img
-                  src="/assets/jett/jett-stand.png"
-                  alt="Jett Avatar"
-                  className="agent-avatar"
-                />
-                <div className="agent-info">
-                  <div className="agent-name">JETT</div>
-                  <div className="agent-desc">Duelist / South Korea</div>
+              <label className="form-label">SELECT YOUR AGENT</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div
+                  className={`rank-option ${selectedAgent === 'jett' ? 'active' : ''}`}
+                  onClick={() => setSelectedAgent('jett')}
+                  style={{ flexDirection: 'row', gap: '12px', padding: '12px', justifyContent: 'flex-start' }}
+                >
+                  <img
+                    src="/assets/jett/jett-stand.png"
+                    alt="Jett"
+                    style={{ width: '40px', height: '40px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
+                  />
+                  <div style={{ textAlign: 'left' }}>
+                    <div className="agent-name" style={{ fontSize: '1rem', fontWeight: 800 }}>JETT</div>
+                    <div style={{ fontSize: '0.75rem', color: '#8c8b88' }}>DUELIST</div>
+                  </div>
+                </div>
+
+                <div
+                  className={`rank-option ${selectedAgent === 'phoenix' ? 'active' : ''}`}
+                  onClick={() => setSelectedAgent('phoenix')}
+                  style={{ flexDirection: 'row', gap: '12px', padding: '12px', justifyContent: 'flex-start' }}
+                >
+                  <img
+                    src="/assets/phoenix/phoenix-stand.png"
+                    alt="Phoenix"
+                    style={{ width: '40px', height: '40px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
+                  />
+                  <div style={{ textAlign: 'left' }}>
+                    <div className="agent-name" style={{ fontSize: '1rem', fontWeight: 800 }}>PHOENIX</div>
+                    <div style={{ fontSize: '0.75rem', color: '#8c8b88' }}>DUELIST</div>
+                  </div>
                 </div>
               </div>
             </div>
