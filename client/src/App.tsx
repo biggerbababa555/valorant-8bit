@@ -90,14 +90,7 @@ function App() {
     });
   };
 
-  const handleLeave = () => {
-    if (socket) {
-      socket.disconnect();
-    }
-    setIsLoggedIn(false);
-    setLocalPlayer(null);
-    setSocket(null);
-  };
+
 
   // Game canvas loop
   useEffect(() => {
@@ -124,13 +117,7 @@ function App() {
       sprites[state] = img;
     });
 
-    // Loading Rank Icons
-    const rankImages: Record<string, HTMLImageElement> = {};
-    RANKS.forEach((r) => {
-      const img = new Image();
-      img.src = `/rank/${r.toLowerCase()}.png`;
-      rankImages[r] = img;
-    });
+
 
     // Local player state
     let px = localPlayer.x;
@@ -266,7 +253,7 @@ function App() {
       // 4. Draw Other Players
       const currentOthers = playersListRef.current;
       currentOthers.forEach((p) => {
-        drawPlayerSprite(ctx, p, sprites, rankImages, spriteSize);
+        drawPlayerSprite(ctx, p, sprites, spriteSize);
       });
 
       // 5. Draw Local Player
@@ -280,7 +267,7 @@ function App() {
         direction: pdir,
         state: pstate,
       };
-      drawPlayerSprite(ctx, selfPlayer, sprites, rankImages, spriteSize, true);
+      drawPlayerSprite(ctx, selfPlayer, sprites, spriteSize, true);
 
       animationId = requestAnimationFrame(updateGame);
     };
@@ -299,7 +286,6 @@ function App() {
     ctx: CanvasRenderingContext2D,
     player: Player,
     sprites: Record<string, HTMLImageElement>,
-    rankImages: Record<string, HTMLImageElement>,
     size: number,
     isLocal: boolean = false,
   ) => {
