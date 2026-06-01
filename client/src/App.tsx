@@ -28,7 +28,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [selectedRank, setSelectedRank] = useState("Radiant");
-  const [selectedAgent, setSelectedAgent] = useState<"jett" | "phoenix">("jett");
+  const [selectedAgent, setSelectedAgent] = useState<"jett" | "phoenix" | "omen">("jett");
   const [socket, setSocket] = useState<Socket | null>(null);
   const [playersList, setPlayersList] = useState<Player[]>([]);
   const [localPlayer, setLocalPlayer] = useState<Player | null>(null);
@@ -108,12 +108,13 @@ function App() {
     const bgImage = new Image();
     bgImage.src = "/map/ascent.jpg";
 
-    // Loading Jett & Phoenix sprites
+    // Loading Jett, Phoenix & Omen sprites
     const sprites: Record<string, Record<string, HTMLImageElement>> = {
       jett: {},
-      phoenix: {}
+      phoenix: {},
+      omen: {}
     };
-    const agents = ["jett", "phoenix"];
+    const agents = ["jett", "phoenix", "omen"];
     const states = ["stand", "walk", "run", "sit"];
 
     agents.forEach((agent) => {
@@ -142,6 +143,12 @@ function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       keys[key] = true;
+
+      // Prevent default browser hotkeys when Ctrl is held (e.g. crouch + move right triggers Ctrl+D)
+      // Allow Ctrl+R for reload just in case
+      if (e.ctrlKey && key !== 'r') {
+        e.preventDefault();
+      }
 
       // Prevent scrolling / default actions for space, arrows, control
       if (
@@ -380,36 +387,52 @@ function App() {
 
             <div className="form-group">
               <label className="form-label">SELECT YOUR AGENT</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 <div
                   className={`rank-option ${selectedAgent === 'jett' ? 'active' : ''}`}
                   onClick={() => setSelectedAgent('jett')}
-                  style={{ flexDirection: 'row', gap: '12px', padding: '12px', justifyContent: 'flex-start' }}
+                  style={{ flexDirection: 'row', gap: '8px', padding: '10px', justifyContent: 'flex-start' }}
                 >
                   <img
                     src="/assets/jett/jett-stand.png"
                     alt="Jett"
-                    style={{ width: '40px', height: '40px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
+                    style={{ width: '32px', height: '32px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
                   />
                   <div style={{ textAlign: 'left' }}>
-                    <div className="agent-name" style={{ fontSize: '1rem', fontWeight: 800 }}>JETT</div>
-                    <div style={{ fontSize: '0.75rem', color: '#8c8b88' }}>DUELIST</div>
+                    <div className="agent-name" style={{ fontSize: '0.85rem', fontWeight: 800 }}>JETT</div>
+                    <div style={{ fontSize: '0.65rem', color: '#8c8b88' }}>DUELIST</div>
                   </div>
                 </div>
 
                 <div
                   className={`rank-option ${selectedAgent === 'phoenix' ? 'active' : ''}`}
                   onClick={() => setSelectedAgent('phoenix')}
-                  style={{ flexDirection: 'row', gap: '12px', padding: '12px', justifyContent: 'flex-start' }}
+                  style={{ flexDirection: 'row', gap: '8px', padding: '10px', justifyContent: 'flex-start' }}
                 >
                   <img
                     src="/assets/phoenix/phoenix-stand.png"
                     alt="Phoenix"
-                    style={{ width: '40px', height: '40px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
+                    style={{ width: '32px', height: '32px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
                   />
                   <div style={{ textAlign: 'left' }}>
-                    <div className="agent-name" style={{ fontSize: '1rem', fontWeight: 800 }}>PHOENIX</div>
-                    <div style={{ fontSize: '0.75rem', color: '#8c8b88' }}>DUELIST</div>
+                    <div className="agent-name" style={{ fontSize: '0.85rem', fontWeight: 800 }}>PHOENIX</div>
+                    <div style={{ fontSize: '0.65rem', color: '#8c8b88' }}>DUELIST</div>
+                  </div>
+                </div>
+
+                <div
+                  className={`rank-option ${selectedAgent === 'omen' ? 'active' : ''}`}
+                  onClick={() => setSelectedAgent('omen')}
+                  style={{ flexDirection: 'row', gap: '8px', padding: '10px', justifyContent: 'flex-start' }}
+                >
+                  <img
+                    src="/assets/omen/omen-stand.png"
+                    alt="Omen"
+                    style={{ width: '32px', height: '32px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
+                  />
+                  <div style={{ textAlign: 'left' }}>
+                    <div className="agent-name" style={{ fontSize: '0.85rem', fontWeight: 800 }}>OMEN</div>
+                    <div style={{ fontSize: '0.65rem', color: '#8c8b88' }}>CONTROLLER</div>
                   </div>
                 </div>
               </div>
