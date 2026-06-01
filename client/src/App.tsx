@@ -28,7 +28,9 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [selectedRank, setSelectedRank] = useState("Radiant");
-  const [selectedAgent, setSelectedAgent] = useState<"jett" | "phoenix" | "omen">("jett");
+  const [selectedAgent, setSelectedAgent] = useState<
+    "jett" | "phoenix" | "omen"
+  >("jett");
   const [socket, setSocket] = useState<Socket | null>(null);
   const [playersList, setPlayersList] = useState<Player[]>([]);
   const [localPlayer, setLocalPlayer] = useState<Player | null>(null);
@@ -46,9 +48,11 @@ function App() {
     if (!username.trim()) return;
 
     // Connect to server
-    const serverUrl = import.meta.env.VITE_SERVER_URL || 
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-        ? 'http://localhost:3001' 
+    const serverUrl =
+      import.meta.env.VITE_SERVER_URL ||
+      (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1"
+        ? "http://localhost:3001"
         : `http://${window.location.hostname}:3001`);
     const newSocket = io(serverUrl);
 
@@ -91,8 +95,6 @@ function App() {
     });
   };
 
-
-
   // Game canvas loop
   useEffect(() => {
     if (!isLoggedIn || !localPlayer || !canvasRef.current || !socket) return;
@@ -112,7 +114,7 @@ function App() {
     const sprites: Record<string, Record<string, HTMLImageElement>> = {
       jett: {},
       phoenix: {},
-      omen: {}
+      omen: {},
     };
     const agents = ["jett", "phoenix", "omen"];
     const states = ["stand", "walk", "run", "sit"];
@@ -124,8 +126,6 @@ function App() {
         sprites[agent][state] = img;
       });
     });
-
-
 
     // Local player state
     let px = localPlayer.x;
@@ -146,11 +146,11 @@ function App() {
 
       // Prevent default browser hotkeys when Ctrl is held (e.g. crouch + move right triggers Ctrl+D)
       // Allow Ctrl+R for reload just in case
-      if (e.ctrlKey && key !== 'r') {
+      if (e.ctrlKey && key !== "r") {
         e.preventDefault();
       }
 
-      // Prevent scrolling / default actions for space, arrows, control
+      // Prevent scrolling / default actions for space, arrows, control, w
       if (
         [
           "arrowup",
@@ -159,6 +159,7 @@ function App() {
           "arrowright",
           " ",
           "control",
+          "w",
         ].includes(e.key.toLowerCase())
       ) {
         e.preventDefault();
@@ -194,7 +195,7 @@ function App() {
           // Calculate speed dynamically based on selected rank index (Iron = 0, Radiant = 8)
           const rankIndex = RANKS.indexOf(selectedRank);
           const rankIdx = rankIndex >= 0 ? rankIndex : 0;
-          
+
           const baseWalkSpeed = 1.5;
           const baseRunSpeed = 3.5;
           const walkSpeed = baseWalkSpeed + rankIdx * 0.35;
@@ -222,18 +223,61 @@ function App() {
 
       pstate = nextState;
 
+      // Double level platform configuration (Clean full-width steps)
+      // Upper Level: Y = 240 (walkable across the entire map)
+      // Base Ground: Y = 420
+      const baseGroundY = groundY;
+      const platformY = 275;
+      let currentGroundY = baseGroundY;
+
+      // The player is on the upper level if their height is on or above the upper floor threshold
+      if (py <= platformY + 10) {
+        currentGroundY = platformY;
+      } else {
+        currentGroundY = baseGroundY;
+      }
+
+      // Drop Down: Pressing 'S' or 'ArrowDown' on the upper level drops you down to the ground
+      const dropPressed = keys["s"] || keys["arrowdown"];
+      if (py === platformY && dropPressed) {
+        py = platformY + 15; // force coordinate below upper level threshold to trigger fall
+        currentGroundY = baseGroundY; // local ground becomes base ground
+        pvy = 2; // small downward velocity push
+      }
+
+      // Automatic Step-up (เดินไปสุดขอบแมพฝั่งซ้ายและขวาเพื่อขึ้นด้านบน)
+      // If player is on the ground (py === 420) and reaches the far left (px <= 120) or far right (px >= 1160)
+      if (py >= baseGroundY - 5 && py <= baseGroundY + 5) {
+        const atLeftEdge = px <= 120;
+        const atRightEdge = px >= 1160;
+        if (atLeftEdge || atRightEdge) {
+          if (!dropPressed) {
+            py = platformY;
+            currentGroundY = platformY;
+            pvy = 0;
+          }
+        }
+      }
+
+      // Jump implementation
+      const jumpPressed = keys["w"] || keys["arrowup"] || keys[" "];
+      const isGrounded = py === currentGroundY;
+      if (jumpPressed && isGrounded && !dropPressed) {
+        pvy = -11; // Jump velocity impulse
+        py += pvy; // step out of ground
+      }
+
       // Gravity and falling logic
-      if (py < groundY) {
+      if (py < currentGroundY) {
         pvy += gravity;
         py += pvy;
 
-        // Spawn/Falling animation state
-        if (py >= groundY) {
-          py = groundY;
+        if (py >= currentGroundY) {
+          py = currentGroundY;
           pvy = 0;
         }
       } else {
-        py = groundY;
+        py = currentGroundY;
         pvy = 0;
       }
 
@@ -387,52 +431,112 @@ function App() {
 
             <div className="form-group">
               <label className="form-label">SELECT YOUR AGENT</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "10px",
+                }}
+              >
                 <div
-                  className={`rank-option ${selectedAgent === 'jett' ? 'active' : ''}`}
-                  onClick={() => setSelectedAgent('jett')}
-                  style={{ flexDirection: 'row', gap: '8px', padding: '10px', justifyContent: 'flex-start' }}
+                  className={`rank-option ${selectedAgent === "jett" ? "active" : ""}`}
+                  onClick={() => setSelectedAgent("jett")}
+                  style={{
+                    flexDirection: "row",
+                    gap: "8px",
+                    padding: "10px",
+                    justifyContent: "flex-start",
+                  }}
                 >
                   <img
                     src="/assets/jett/jett-stand.png"
                     alt="Jett"
-                    style={{ width: '32px', height: '32px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      objectFit: "contain",
+                      imageRendering: "pixelated",
+                      borderRadius: "4px",
+                    }}
                   />
-                  <div style={{ textAlign: 'left' }}>
-                    <div className="agent-name" style={{ fontSize: '0.85rem', fontWeight: 800 }}>JETT</div>
-                    <div style={{ fontSize: '0.65rem', color: '#8c8b88' }}>DUELIST</div>
+                  <div style={{ textAlign: "left" }}>
+                    <div
+                      className="agent-name"
+                      style={{ fontSize: "0.85rem", fontWeight: 800 }}
+                    >
+                      JETT
+                    </div>
+                    <div style={{ fontSize: "0.65rem", color: "#8c8b88" }}>
+                      DUELIST
+                    </div>
                   </div>
                 </div>
 
                 <div
-                  className={`rank-option ${selectedAgent === 'phoenix' ? 'active' : ''}`}
-                  onClick={() => setSelectedAgent('phoenix')}
-                  style={{ flexDirection: 'row', gap: '8px', padding: '10px', justifyContent: 'flex-start' }}
+                  className={`rank-option ${selectedAgent === "phoenix" ? "active" : ""}`}
+                  onClick={() => setSelectedAgent("phoenix")}
+                  style={{
+                    flexDirection: "row",
+                    gap: "8px",
+                    padding: "10px",
+                    justifyContent: "flex-start",
+                  }}
                 >
                   <img
                     src="/assets/phoenix/phoenix-stand.png"
                     alt="Phoenix"
-                    style={{ width: '32px', height: '32px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      objectFit: "contain",
+                      imageRendering: "pixelated",
+                      borderRadius: "4px",
+                    }}
                   />
-                  <div style={{ textAlign: 'left' }}>
-                    <div className="agent-name" style={{ fontSize: '0.85rem', fontWeight: 800 }}>PHOENIX</div>
-                    <div style={{ fontSize: '0.65rem', color: '#8c8b88' }}>DUELIST</div>
+                  <div style={{ textAlign: "left" }}>
+                    <div
+                      className="agent-name"
+                      style={{ fontSize: "0.85rem", fontWeight: 800 }}
+                    >
+                      PHOENIX
+                    </div>
+                    <div style={{ fontSize: "0.65rem", color: "#8c8b88" }}>
+                      DUELIST
+                    </div>
                   </div>
                 </div>
 
                 <div
-                  className={`rank-option ${selectedAgent === 'omen' ? 'active' : ''}`}
-                  onClick={() => setSelectedAgent('omen')}
-                  style={{ flexDirection: 'row', gap: '8px', padding: '10px', justifyContent: 'flex-start' }}
+                  className={`rank-option ${selectedAgent === "omen" ? "active" : ""}`}
+                  onClick={() => setSelectedAgent("omen")}
+                  style={{
+                    flexDirection: "row",
+                    gap: "8px",
+                    padding: "10px",
+                    justifyContent: "flex-start",
+                  }}
                 >
                   <img
                     src="/assets/omen/omen-stand.png"
                     alt="Omen"
-                    style={{ width: '32px', height: '32px', objectFit: 'contain', imageRendering: 'pixelated', borderRadius: '4px' }}
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      objectFit: "contain",
+                      imageRendering: "pixelated",
+                      borderRadius: "4px",
+                    }}
                   />
-                  <div style={{ textAlign: 'left' }}>
-                    <div className="agent-name" style={{ fontSize: '0.85rem', fontWeight: 800 }}>OMEN</div>
-                    <div style={{ fontSize: '0.65rem', color: '#8c8b88' }}>CONTROLLER</div>
+                  <div style={{ textAlign: "left" }}>
+                    <div
+                      className="agent-name"
+                      style={{ fontSize: "0.85rem", fontWeight: 800 }}
+                    >
+                      OMEN
+                    </div>
+                    <div style={{ fontSize: "0.65rem", color: "#8c8b88" }}>
+                      CONTROLLER
+                    </div>
                   </div>
                 </div>
               </div>
